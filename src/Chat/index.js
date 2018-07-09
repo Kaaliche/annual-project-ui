@@ -33,36 +33,6 @@ class Chat extends Component {
     };
 
     handleSubmit = (e) => {
-        e.preventDefault();
-        if (this.state.userMessage) {
-            const { userMessage, messages } = this.state;
-            const { onSearch, resetTranscript, stopListening } = this.props;
-            let newMessage = {content: userMessage, type: "user", key: messages.length};
-            messages.push(newMessage);
-            resetTranscript();
-            stopListening();
-            this.setState({messages, userMessage: '', recording: false});
-
-            let request = requestServer(userMessage, (response) => {
-
-                const action = response.result.action;
-
-                if (action === "action.guess.feeling" && response.result.parameters.title) {
-                    const artist = onSearch('artist', response.result.parameters.title);
-                    const messageContent = 'Cette chanson est interprétée par ' + artist.name+'.';
-
-                    newMessage = {content: messageContent, type: "bot", key: messages.length};
-                    messages.push(newMessage);
-                    this.setState({messages})
-                } else {
-                    newMessage = {content: response.result.fulfillment.speech, type: "bot", key: messages.length};
-                    messages.push(newMessage);
-                    this.setState({messages})
-                }
-            });
-        } else {
-            return false;
-        }
     };
 
     render() {
