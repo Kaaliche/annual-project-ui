@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import Bubble from './Chat/bubble';
-import Input from './Chat/input';
+import Bubble from './bubble';
+import Input from './input';
+import './style.css'
 import { requestServer } from "../ProcessComAPI";
 
-import axios from 'axios';
 
 class Chat extends Component {
 
@@ -13,7 +13,6 @@ class Chat extends Component {
         resetTranscript: PropTypes.func,
         startListening : PropTypes.func,
         stopListening : PropTypes.func,
-        browserSupportsSpeechRecognition: PropTypes.bool,
         onSearch: PropTypes.func.isRequired,
     };
 
@@ -24,7 +23,7 @@ class Chat extends Component {
         recording: false,
     };
 
-    componentWillReceiveProps(nextProps) {
+    componentWillReceiveProps(nextProps){
         this.setState({userMessage: nextProps.transcript});
     };
 
@@ -32,10 +31,39 @@ class Chat extends Component {
         this.setState({userMessage: text});
     };
 
-    handleSubmit = (e) => {
+    scrollToBottom = () => {
+        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
     };
 
-    render() {
+    handleSubmit = (e) => {
+        e.preventDefault();
+        if(this.state.userMessage){
+            const{userMessage, messages} = this.state;
+            const{onSearch} = this.props;
+            let message = {content: userMessage, type: "user", key:messages.length};
+            messages.push(message);
+            this.setState({messages, userMessage: '', recording: false});
+
+            let req = requestServer(userMessage, (response) => {
+                const action = response.result.action;
+
+                if(action === "action.guess.feeling" && response.result.parameters.feeling) {
+                    const feeling = onSearch('feeling', response.result.parameters.feeling);
+                    const messageContent = 'Le sentiment ressortant le plus est le suivant : ' + feeling.name+'.';
+
+                    message = {content: messageContent, type: "bot", key: messages.length};
+                    messages.push(message);
+                    this.setState({messages});
+                } else {
+                    message = {content: response.result.fulfillment.speech, type: "bot", key: messages.length};
+                    messages.push(message);
+                    this.setState({messages});
+                }
+            })
+        }
+    };
+
+    render(){
 
         const { messages, userMessage, recording } = this.state;
         const { transcript, resetTranscript, browserSupportsSpeechRecognition } = this.props
@@ -44,7 +72,7 @@ class Chat extends Component {
             <div className="Content" ref={(el) => { this.messagesEnd = el; }}>
                 <section className='userSec'>
                     <div className='active'>
-                        <img src="/public/picto.png"/>
+                        <img src="/picto.png"/>
                     </div>
                     <Bubble type='bot' text='Bonjour, je suis le Process Com Bot !' />
                 </section>
@@ -52,7 +80,7 @@ class Chat extends Component {
                     return(
                         <section key={msg.key} className='userSec'>
                             <div className={ msg.type === 'user' ? 'hidden' : 'active' }>
-                                <img src="/public/picto.png"/>
+                                <img src="/picto.png"/>
                             </div>
                             <div className={ msg.type === 'user' ? 'active userCase' : 'hidden' }>
                                 <i className="fa fa-user"></i>
@@ -69,3 +97,5 @@ class Chat extends Component {
         );
     }
 }
+
+export default Chat;
